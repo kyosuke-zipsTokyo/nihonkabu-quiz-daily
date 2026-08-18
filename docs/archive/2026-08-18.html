@@ -210,6 +210,51 @@
     text-decoration:none;
     font-weight:700;
   }
+  .mark{
+    float:right;
+    font-size:17px;
+    font-weight:900;
+    line-height:1;
+  }
+  .mark-correct{color:var(--up);}
+  .mark-wrong{color:var(--down);}
+  .market-bar{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+  }
+  .market-row{
+    display:flex;
+    gap:8px;
+  }
+  .market-item{
+    flex:1;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:8px 10px;
+  }
+  .market-label{
+    font-size:10px;
+    color:#8a8270;
+    margin-bottom:3px;
+  }
+  .market-value{
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .market-change{
+    font-size:10.5px;
+    font-weight:700;
+    margin-top:2px;
+  }
+  .market-asof{
+    font-size:9.5px;
+    color:#9a927c;
+    margin-top:8px;
+    text-align:right;
+  }
   footer{
     padding:14px 24px 20px;
     font-size:11px;
@@ -225,6 +270,7 @@
     <div class="eyebrow">今日のトレードクイズ</div>
     <h1>2026年8月18日（火）</h1>
     <div class="progress-row" id="progressRow"></div>
+    <div class="market-bar" id="marketBar"></div>
   </header>
 
   <main>
@@ -238,6 +284,10 @@
     <div class="news" id="newsArea">
       <div class="eyebrow" style="margin-bottom:12px;">TODAY'S HEADLINES（米国市場中心・JST深夜まで）</div>
       <div id="newsList"></div>
+      <div id="newsJpSection">
+        <div class="eyebrow" style="margin:24px 0 12px;">国内マーケットニュース（日本株関連）</div>
+        <div id="newsListJp"></div>
+      </div>
     </div>
   </main>
 
@@ -245,11 +295,33 @@
 </div>
 
 <script>
-const QUESTIONS = [{"cat":"為替と株価","q":"1ドル=145円から150円へ急速に円安が進んだ局面で、短期的に相対的な買い需要が最も高まりやすい日本株のグループはどれか。","opts":["電力・ガスなど輸入コスト比率の高い内需株","自動車・機械など海外売上比率の高い輸出関連株","国内小売・食品などの生活必需品株","不動産REIT中心の利回り系銘柄"],"correct":1,"explain":"円安は輸出企業の円換算売上・営業利益を押し上げるため、自動車・機械・電機など海外売上比率の高い銘柄が短期で買われやすい。目安として、トヨタなど大手自動車では1円の円安で数百億円規模の営業利益押し上げ効果が試算され、為替の動きが即座に業績予想の上方修正期待に転換する。逆に電力・ガス・小売など輸入コスト依存の内需株は売られやすい。","chart":{"type":"bar","data":[{"label":"輸出関連(自動車)","value":2.5},{"label":"機械・電機","value":1.8},{"label":"総合商社","value":1.2},{"label":"電力・ガス","value":-1.5}]}},{"cat":"米CPIと株価","q":"米CPIが市場予想を上振れした直後、典型的に起こりやすい短期の反応の組み合わせはどれか。","opts":["米長期金利低下・ドル安・グロース株高","米長期金利上昇・ドル高・グロース株安","米長期金利低下・ドル高・バリュー株安","金利変化なし・円高・日本株全面高"],"correct":1,"explain":"CPI上振れは利下げ期待の後退を意味し、米長期金利上昇→ドル高・円安、割引率上昇でPERの高いグロース株（ハイテク・半導体）が売られやすい。日本株は円安メリットで下支えされる一方、翌日の東京市場ではまず米ハイテク安を映して半導体関連が下押しする二段構えの反応になりやすい。","chart":{"type":"bar","data":[{"label":"米10年金利(bp変化)","value":8},{"label":"ドル円(円)","value":1.2},{"label":"ナスダック(%)","value":-1.4},{"label":"ダウ(%)","value":-0.6}]}},{"cat":"米雇用統計","q":"米雇用統計（非農業部門雇用者数）が発表される日本時間として正しいのはどれか（米国夏時間の場合）。","opts":["原則第1金曜の日本時間21時30分","原則第1金曜の日本時間22時30分","原則第2水曜の日本時間21時30分","原則月末最終営業日の日本時間23時"],"correct":0,"explain":"米雇用統計は原則毎月第1金曜、米東部時間8時30分公表。夏時間（3月第2日曜〜11月第1日曜）は日本時間21時30分、冬時間は22時30分となる。東京市場の引け後に出るため、結果は先物・ドル円に即反映され、翌営業日の日本株の寄り付きギャップを決める最重要イベントの一つ。","chart":{"type":"none","data":[]}},{"cat":"直近ニュース","q":"直近の市場環境として、米FRBの政策金利見通しに関する報道が続いている。一般に「年内の利下げ回数見通しが1回分減る」との観測が広がった場合、直後の日本株市場で最も想定しやすい動きはどれか。","opts":["ドル安・円高が進み輸出株が上昇する","米金利上昇・円安を伴い、グロース株が売られ銀行株が買われやすい","REITと不動産株が真っ先に買われる","出来高が急減し全面的な値動きが消える"],"correct":1,"explain":"利下げ期待の後退は米金利上昇→日米金利差拡大→円安という経路をたどりやすい。株式内部では、割引率上昇に弱いグロース（半導体・情報通信）が売られる一方、利ざや改善期待のメガバンク・地銀など金融株、円安メリットの輸出株に資金が向かうセクターローテーションが起こりやすい。金利敏感なREITや不動産は逆風。","chart":{"type":"bar","data":[{"label":"銀行株","value":1.6},{"label":"輸出株","value":0.8},{"label":"情報通信","value":-1.1},{"label":"REIT","value":-1.3}]}},{"cat":"歴史的暴落","q":"1987年10月19日「ブラックマンデー」で、米ダウ工業株30種平均が1日で記録した下落率はおよそどれか。","opts":["約-7%","約-13%","約-23%","約-35%"],"correct":2,"explain":"ダウは1987年10月19日に508ドル安、率にして約-22.6%と1日の下落率として史上最大を記録した。翌20日の日経平均も-14.9%（3836円安）と当時の過去最大の下げ幅・下落率を記録。ただしその後、日経平均は約半年で暴落前水準を回復しており、流動性ショック型の暴落は「業績悪化を伴わない場合、戻りも速い」典型例として学習価値が高い。","chart":{"type":"bar","data":[{"label":"ダウ 1987/10/19","value":-22.6},{"label":"日経平均 1987/10/20","value":-14.9},{"label":"日経平均 2024/8/5","value":-12.4},{"label":"日経平均 2008/10/16","value":-11.4}]}},{"cat":"歴史的急落と反発","q":"2024年8月5日、日経平均は史上最大の下げ幅となる4451円安（-12.4%）を記録した。その翌営業日（8月6日）の値動きとして正しいものはどれか。","opts":["さらに10%超下落し二段安となった","ほぼ変わらずで方向感が出なかった","3217円高（+10.2%）と史上最大の上げ幅で急反発した","売買停止で取引が成立しなかった"],"correct":2,"explain":"2024年8月5日の暴落は日銀の追加利上げ後の急激な円高と円キャリー取引の巻き戻し、米景気懸念（サーム・ルール点灯）が重なった需給主導の急落だった。翌6日には3217円高（+10.2%）と史上最大の上げ幅で反発。ファンダメンタルズの崩壊ではなくポジション解消主導の暴落は、V字反発が起きやすいという典型パターンを示した。","chart":{"type":"line","data":[{"label":"8/1","value":38126},{"label":"8/2","value":35910},{"label":"8/5","value":31458},{"label":"8/6","value":34675},{"label":"8/7","value":35089}]}},{"cat":"伝説のトレーダー","q":"ジェシー・リバモアの相場哲学として最も適切なものはどれか。","opts":["含み損のポジションは平均取得単価を下げるためにナンピンで買い増す","損失は早く切り、利の乗ったポジションは『座って待つ』ことで大きく取る","常に相場に張り付き、毎日必ず売買する","分散投資により個別銘柄リスクをゼロに近づける"],"correct":1,"explain":"リバモアは「大きな利益はトレードではなく“待つこと(sitting)”で得られる」と述べ、損切りは素早く、勝ちポジションは伸ばす（カット・ロス・ショート／レット・プロフィット・ラン）を徹底した。また建玉を上値追いで積み増す『ピラミッディング』を用い、下落する銘柄へのナンピンは最も危険な行為として戒めた。1929年の暴落では大規模な空売りで巨額の利益を得たとされる。","chart":{"type":"none","data":[]}},{"cat":"伝説のトレーダー","q":"ジョージ・ソロスが1992年に行った有名な取引「イングランド銀行を打ち負かした男」の内容はどれか。","opts":["ポンドを大量に空売りし、ERM離脱・ポンド急落で巨額の利益を得た","日本国債を買い持ちしてデフレで利益を得た","ドイツ株を長期保有して統一特需を取った","原油先物を買い占めて湾岸戦争で利益を得た"],"correct":0,"explain":"1992年9月、ソロスのクォンタム・ファンドは欧州為替相場メカニズム(ERM)の下でポンドが割高に固定されている歪みに着目し、100億ドル規模のポンド売りを仕掛けた。9月16日「ブラック・ウェンズデー」に英国はERM離脱を余儀なくされ、ソロスは約10億ドルの利益を得たとされる。マクロの矛盾を見つけ、確信度が高いときに極端に大きく張る（再帰性理論に基づく集中投資）が彼の手法の核心。","chart":{"type":"bar","data":[{"label":"想定ポンド売り(億ドル)","value":100},{"label":"推定利益(億ドル)","value":10},{"label":"ポンド下落率(%)","value":-15}]}},{"cat":"伝説のトレーダー","q":"レイ・ダリオが提唱した『オール・ウェザー』戦略の中核となる考え方はどれか。","opts":["株式100%で長期保有し、下落時は追加投資する","成長率とインフレの4象限に対しリスク（変動率）を均等配分する","為替のトレンドにのみ賭けるシステムトレード","短期の需給を読み切り毎日回転売買する"],"correct":1,"explain":"ダリオのオール・ウェザーは「成長率の上振れ/下振れ」×「インフレの上振れ/下振れ」の4つの経済環境それぞれにリスクを均等に配分する『リスクパリティ』の発想。金額ではなくリスク量で配分するため、変動率の低い債券にはレバレッジをかける。どの局面でもどれかの資産が機能するため、ドローダウンを抑えることを狙う。短中期トレードでも「シナリオごとにポジションのリスク寄与を測る」考え方は応用できる。","chart":{"type":"bar","data":[{"label":"成長↑局面(株・商品)","value":25},{"label":"成長↓局面(国債)","value":25},{"label":"インフレ↑(物価連動債・金)","value":25},{"label":"インフレ↓(株・国債)","value":25}]}},{"cat":"マクロと日本株の連動","q":"日銀の追加利上げ観測が急速に強まったとき、短中期トレードで最も注意すべき日本株の動きはどれか。","opts":["円高進行で輸出株が下落し、一方で銀行株が買われやすい","円安が進み全面高になる","金利上昇でREITと銀行株がそろって上昇する","為替も株価も反応しない"],"correct":0,"explain":"利上げ観測は日米金利差の縮小＝円高要因。輸出関連の想定為替レートに対する下振れ懸念から自動車・機械が売られ、指数全体も押し下げられやすい。半面、預貸利ざや改善が見込める銀行・保険は買われ、明確なセクターローテーションが生じる。借入コスト上昇が効くREIT・不動産・高レバレッジ企業は下落しやすく、「上昇するのは銀行だけ」という局面になりやすい点が重要。","chart":{"type":"bar","data":[{"label":"銀行","value":3.2},{"label":"保険","value":2.4},{"label":"自動車","value":-2.1},{"label":"REIT","value":-1.8}]}}];
+const QUESTIONS = [{"cat":"マクロ指標","q":"米ISM製造業景況指数が「49.2」と発表された。この数値が短期トレードで持つ一般的な意味として最も適切なものはどれか。","opts":["50を下回っており製造業は縮小局面。景気敏感株には逆風だが、利下げ期待から指数全体は上昇することもある","50を下回ると必ず株式市場全体が急落する","ISMは前年比の伸び率であり、49.2%の高成長を意味する","ISMは50を下回ると自動的にFRBが利下げする決まりになっている"],"correct":0,"explain":"ISM製造業景況指数は50が好不況の分かれ目となる拡散指数（DI）で、50割れは製造業の縮小を示します。素材・機械など景気敏感セクターには売り材料になりやすい一方、景気減速＝金融緩和期待という経路で株価指数がむしろ底堅くなることもあり、「悪い数字＝必ず株安」ではない点が短期トレードの要注意ポイントです。","chart":{"type":"bar","data":[{"label":"好不況の境目","value":50},{"label":"今回の想定値","value":49.2},{"label":"拡張圏の例","value":53.5},{"label":"深い不況圏の例","value":45}]}},{"cat":"マクロ指標","q":"米10年債利回りが4.0%から4.6%へ急上昇した局面で、日本株の中で相対的に売られやすい傾向が強いのはどのタイプの銘柄か。","opts":["高PER・高成長期待のグロース株（将来利益の割引現在価値が低下しやすい）","高配当・低PERのバリュー株のみ","内需ディフェンシブ株のみが集中的に売られる","金利は株価のバリュエーションに一切影響しない"],"correct":0,"explain":"割引率（金利）が上がると、遠い将来のキャッシュフローほど現在価値が目減りします。利益の大半が将来に偏る高PERグロース株はデュレーションが長く、金利急騰時に最も打撃を受けやすい一方、銀行株など金利上昇メリットセクターは逆に買われやすくなります。","chart":{"type":"line","data":[{"label":"起点","value":4},{"label":"+1週","value":4.2},{"label":"+2週","value":4.4},{"label":"+3週","value":4.6}]}},{"cat":"マクロ指標","q":"米雇用統計で失業率が予想を上回って悪化したにもかかわらず、米株先物と日経平均先物が上昇することがある。この現象の最も一般的な説明はどれか。","opts":["景気減速で利下げ観測が強まり、金利低下がバリュエーションを支えるため（いわゆる『悪材料は好材料』）","失業率の上昇は企業利益の増加を直接意味するため","失業率のデータは株価と無関係だから","失業率が上がると自動的に自社株買いが増える規則があるため"],"correct":0,"explain":"景気後退が本格化していない局面では、労働市場の緩和は賃金インフレ鈍化と利下げ観測につながり、金利低下がPERを押し上げます。ただし失業率の悪化が急激（例：サーム・ルール的な上昇）になると『景気後退懸念』が優先され、株価は素直に下落に転じます。同じ指標でも局面によって反応が反転する点が短期売買の肝です。","chart":{"type":"line","data":[{"label":"3カ月前","value":4.1},{"label":"2カ月前","value":4.2},{"label":"前月","value":4.3},{"label":"今回","value":4.5}]}},{"cat":"直近ニュース","q":"日本時間8月18日早朝に伝わった米国市場（現地17日）の動きは、ダウ約-0.5%、S&P500約-0.5%、ナスダック約-0.3%と主要3指数が下落する一方、半導体関連には買いが入った。この日の半導体株が相対的に強かった背景として報じられたのはどれか。","opts":["生成AI企業アンソロピックの売上高が前年同期比で大幅増と伝わり、AI投資継続期待が高まった","米政府が半導体への追加関税を発表した","日銀が半導体企業への直接出資を決めた","原油価格の急落で半導体の材料費が下がると発表された"],"correct":0,"explain":"17日の米市場では主要指数が軟調な中、生成AI「Claude」を手がけるアンソロピックの四半期売上高が前年同期の十数倍規模に拡大したと伝わり、AI関連の設備投資が続くとの期待から半導体関連に資金が向かいました。指数が下げていてもテーマ株だけが逆行高するのは短期トレードで頻出のパターンです。","chart":{"type":"bar","data":[{"label":"ダウ(%)","value":-0.51},{"label":"S&P500(%)","value":-0.52},{"label":"ナスダック(%)","value":-0.32}]}},{"cat":"直近ニュース","q":"2026年7月末に日米当局が異例の協調介入を実施した後、8月中旬にドル円は再び159円台まで円安が進み、介入による円高幅の半分以上を失った。この『介入後に半値戻し』が起きやすい主因として最も適切なものはどれか。","opts":["介入は需給に一時的な衝撃を与えるだけで、日米金利差という基調要因が変わらないため","介入は法律上必ず1カ月で無効になるため","協調介入は為替レートを固定する制度だから","お盆で日本の輸出企業が大量にドル買いを義務付けられているため"],"correct":0,"explain":"為替介入はポジションの投げを促してスパイクを作りますが、金利差やインフレ格差といったファンダメンタルズが変わらなければトレンドは戻りやすいのが歴史的なパターンです。加えてお盆期間は市場参加者が減って流動性が薄く、値が飛びやすくなります。短期トレードでは『介入＝トレンド転換』と決め打ちせず、戻り局面の値動きで判断することが重要です。","chart":{"type":"line","data":[{"label":"介入直前","value":161},{"label":"介入直後","value":153},{"label":"8月10日","value":159},{"label":"8月17日","value":159.1}]}},{"cat":"歴史的相場","q":"リーマン・ショック後の2008年10月28日、日経平均が付けたバブル崩壊後の安値はおよそいくらか。","opts":["6,994円","10,255円","12,800円","4,120円"],"correct":0,"explain":"2008年10月28日の取引時間中に日経平均は6,994円90銭まで下落し、1982年以来の安値を記録しました。同年の年間下落率は約42%で、指数が半年足らずで半値近くまで沈む急落局面でした。急落の最終局面では出来高急増と大陰線の後にセリング・クライマックスが生じやすい点が、その後の反発局面を読むヒントになります。","chart":{"type":"line","data":[{"label":"2007年高値","value":18261},{"label":"2008年9月","value":11743},{"label":"2008年10月安値","value":6994},{"label":"2009年末","value":10546}]}},{"cat":"歴史的相場","q":"2020年3月のコロナ・ショックで日経平均は一時16,000円台まで急落した。その後2020年末までの値動きとして正しいものはどれか。","opts":["各国の大規模な金融緩和と財政出動を背景にV字回復し、年末には27,000円台まで戻した","年末まで16,000円台で横ばいが続いた","さらに下落して1万円割れとなった","翌年3月まで売買停止となり値がつかなかった"],"correct":0,"explain":"2020年3月19日の16,552円を底に、FRBの無制限量的緩和や各国の財政出動を受けて相場はV字回復し、日経平均は同年12月に27,000円台を回復しました。『政策対応の規模とスピード』が急落後のリバウンド角度を決めるという、短期トレードでも有効な教訓が残った局面です。","chart":{"type":"line","data":[{"label":"2020/1","value":23656},{"label":"2020/3安値","value":16552},{"label":"2020/6","value":22288},{"label":"2020/12","value":27444}]}},{"cat":"歴史的相場","q":"米国株のサーキットブレーカー（市場全体の取引一時停止）について、正しい説明はどれか。","opts":["S&P500が前日終値比-7%でレベル1が発動し15分間取引を停止、-13%でレベル2、-20%で当日の取引終了となる","-2%の下落で即座に当日の取引が終了する","日中の上昇率が大きい場合にのみ発動する","日本のストップ安と同じく個別銘柄ごとにのみ適用される"],"correct":0,"explain":"米国の市場全体のサーキットブレーカーはS&P500を基準に-7%（レベル1）、-13%（レベル2）で各15分停止、-20%（レベル3）で当日終了という三段構えです。2020年3月には短期間に4度発動しました。急落時にどの水準で売買が止まるかを把握しておくと、日経平均先物やレバレッジETFのリスク管理に役立ちます。","chart":{"type":"bar","data":[{"label":"レベル1(%)","value":-7},{"label":"レベル2(%)","value":-13},{"label":"レベル3(%)","value":-20}]}},{"cat":"伝説的トレーダー","q":"『オニールの成長株発掘法』で知られるウィリアム・オニールが、CAN-SLIM手法において最重要と説いたリスク管理ルールはどれか。","opts":["買値から7〜8%下落したら理由を問わず損切りする","含み損の銘柄はナンピンして平均取得単価を下げる","損切りは決算発表まで待って判断する","下落率が50%になったら損切りする"],"correct":0,"explain":"オニールは、大きな上昇銘柄は正しいブレイクアウト後に7〜8%を超えて下げにくいとして、買値から7〜8%の下落で機械的に損切りすることを鉄則としました。利益は20〜25%で一部確定するのが基本形で、損小利大のリスクリワードを制度的に確保する考え方です。短中期トレードでも再現性の高い規律です。","chart":{"type":"bar","data":[{"label":"損切りライン(%)","value":-8},{"label":"利益確定目安(%)","value":22},{"label":"想定リスクリワード倍","value":2.75}]}},{"cat":"伝説的トレーダー","q":"ポール・チューダー・ジョーンズが繰り返し語ってきた、ポジション判断の基準として有名な指標はどれか。","opts":["200日移動平均線を割り込んだ資産はリスクを落とす（トレンドに逆らわない）","PBR1倍割れの銘柄をひたすら買い増す","配当利回りが3%を超えたら全力買いする","出来高を一切見ずに値幅だけで判断する"],"correct":0,"explain":"ポール・チューダー・ジョーンズは、200日移動平均線を下回った資産からは資金を引き上げるというシンプルなトレンドフォローの原則を重視し、「損失を出している時は防御に徹する」姿勢を強調してきました。彼は1987年のブラックマンデーで下落を先読みして大きな利益を上げたことでも知られ、資金保全を最優先する点が共通しています。","chart":{"type":"none","data":[]}}];
 
-const NEWS = [{"src":"Bloomberg","title":"米株式市場ライブ：ダウ・S&P500の当日値動きとセクター別動向","sum":"米主要指数の当日の推移や物色の中心、金利・為替と連動した売買動向をリアルタイムで追った市況ライブ記事です。","url":"https://www.bloomberg.com/news/articles/2026-08-16/stock-market-today-dow-s-p-live-updates"},{"src":"Bloomberg","title":"米株式マーケット総合：主要指数・個別銘柄の最新動向","sum":"米国株の指数動向と値動きの大きい個別銘柄を横断的にまとめたマーケット総合ページで、寄り付き前後のギャップ確認に使えます。","url":"https://www.bloomberg.com/markets/stocks"},{"src":"Bloomberg","title":"FRBの次の一手は利下げ、エコノミストと市場で見方に温度差","sum":"次の政策変更が利下げになるとの見方が広がる一方、その時期やペースを巡ってエコノミストと金融市場の織り込みにずれがあると伝える内容です。","url":"https://www.bloomberg.com/jp/news/articles/2026-07-24/TIOS3EKK3NY800"},{"src":"Bloomberg","title":"FRB利下げ開始時期の予想が後ずれ、年内回数の見方は維持","sum":"調査で利下げ開始時期の予想が後ろ倒しになった一方、年内の利下げ回数見通しは据え置かれたと報じられており、金利敏感株の売買材料になります。","url":"https://www.bloomberg.com/jp/news/articles/2026-03-14/TBUBSLKIUPUF00"},{"src":"日本経済新聞","title":"海外マーケット最新：米国・欧州・アジア株式市場の動き","sum":"前日の米欧株とアジア時間の値動きを地域横断で整理しており、東京market寄り付き前の外部環境チェックに向いた速報ページです。","url":"https://www.nikkei.com/markets/world-markets/"},{"src":"日本経済新聞","title":"国内株式ニュース：日本株の当日材料と個別銘柄の動意","sum":"日本株市場の当日の売買材料や物色動向、値動きの目立つ個別銘柄を随時更新で伝える国内マーケットの速報です。","url":"https://www.nikkei.com/markets/stocks/"},{"src":"三菱UFJモルガン・スタンレー証券","title":"本日の株式市況：日経平均の値動きと需給の背景","sum":"当日の日経平均・TOPIXの推移と、上昇・下落の背景となった需給や海外要因を証券会社の視点で解説する市況レポートです。","url":"https://www.sc.mufg.jp/market/today_market/index.html"},{"src":"Trading Economics","title":"米国株式市場指標：主要指数の水準と変化率","sum":"米国の主要株価指数の最新水準と変化率をデータベースとして掲載しており、過去との比較や水準感の確認に使えます。","url":"https://jp.tradingeconomics.com/united-states/stock-market"},{"src":"野村證券","title":"米金融政策見通しを変更、利下げ想定から据え置き想定へ","sum":"米国の金融政策シナリオを年2回の利下げから据え置きへ修正したとするレポートで、金利前提の変化がバリュエーションに与える影響を示しています。","url":"https://www.nomura.co.jp/wealthstyle/article/0746/"},{"src":"J.P.モルガン・アセット・マネジメント","title":"2026年のFRB・ECB・日銀の金融政策見通し","sum":"主要中銀の政策金利パスを比較したレポートで、日米金利差を通じた為替と日本株セクターへの波及を考える際の基礎資料になります。","url":"https://am.jpmorgan.com/jp/ja/asset-management/per/insights/market-insights/on-the-minds-of-investors/strategist-views-2026q1-03/"}];
+const NEWS = [{"src":"みんかぶ（FX/為替）","title":"NY株式17日：ダウ続落、ナスダックも下げに転じるも半導体は上昇","sum":"17日の米市場はダウが272ドル安、S&P500・ナスダックも下落する一方、生成AI企業の急拡大した売上が伝わり半導体関連には資金が入りました。","url":"https://fx.minkabu.jp/news/376322"},{"src":"みんかぶ（FX/為替）","title":"ドル円、159円割れには慎重も戻りは鈍い＝東京為替","sum":"東京市場午後のドル円は159円10銭前後で推移し、158円台への下押しにも上値追いにも慎重な地合いが続きました。","url":"https://fx.minkabu.jp/news/376250"},{"src":"日本経済新聞","title":"円159円台、日米協調介入後の上昇幅を半値戻す","sum":"7月末の異例の協調介入で進んだ円高が8月に入り剥落し、お盆で流動性が細るなか再度の介入警戒が意識されています。","url":"https://www.nikkei.com/article/DGXZQOGN108YP0Q6A810C2000000/"},{"src":"OANDA証券","title":"米CPIは市場予想と一致、発表直後は円高もその後は円安で終了","sum":"8月の米消費者物価指数が予想通りとなり、発表直後の円高は続かずドル円は159円台半ばで引けました。","url":"https://www.oanda.jp/lab-education/market_news/2026_08_13_usdjpy/"},{"src":"野村證券（ニューヨーク株式市況）","title":"米小売売上高とミシガン大指数の下振れで主要3指数そろって小幅安","sum":"7月小売売上高が前月比マイナス、8月ミシガン大消費者マインドも低下する一方で1年先インフレ期待が上振れし、金利上昇が株価の重荷となりました。","url":"https://advance.quote.nomura.co.jp/meigara/nomura2/users/asp/ny.asp?F=users%2Fnomura%2Fny%2Fhp"},{"src":"日本経済新聞","title":"米国株、ダウ続落 金利上昇が重荷でナスダックとS&P500は反発","sum":"インフレ高止まりと堅調な労働市場を背景に年内利上げ観測が浮上し、長期金利4.5%台での推移が株式の割高感を意識させました。","url":"https://www.nikkei.com/nkd/company/us/CAT/news/?DisplayType=3&ng=DGXZQOFL08B93008062026000000"},{"src":"Bloomberg","title":"米国市況：S&P500とダウが最高値、PMI低下で利下げ観測強まる","sum":"AI関連への期待と金融緩和観測が重なり主要指数が最高値を更新、ドルは156円台後半に強含みました（1月の記事）。","url":"https://www.bloomberg.com/jp/news/articles/2026-01-06/T8G3H8KJH6V600"},{"src":"財経新聞","title":"米市場でS&P500とダウが最高値更新、好決算と地政学リスク後退が支援","sum":"ホルムズ海峡の通航再開期待とパランティアなどの好決算を受けて主要3指数が大幅高となりました（8月4日）。","url":"https://www.zaikei.co.jp/article/20260805/864463.html"},{"src":"日経CNBC","title":"先読み東京市場：NYダウ続伸で連日の最高値、為替は158〜160円のレンジ想定","sum":"米株高を受けた東京市場の見通しと、ドル円が160円手前で底堅く推移するとの為替アナリストの見解が紹介されました。","url":"https://online.nikkei-cnbc.co.jp/vod/65649"},{"src":"みんかぶ（FX/為替）","title":"シカゴ連銀総裁「インフレ統計は改善傾向」と発言","sum":"米地区連銀総裁が物価指標の改善を指摘し、戦争の影響が薄れることへの期待を示したと伝わりました。","url":"https://fx.minkabu.jp/news/376250"}];
+const NEWS_JP = [{"src":"日本経済新聞","title":"日経平均は7万円手前で高値圏もみ合い、年初来高値は7万2000円台","sum":"日経平均は3月末の年初来安値から大きく水準を切り上げ、7万円近辺での高値圏推移が続いています。","url":"https://www.nikkei.com/marketdata/quote/NK225/"},{"src":"株探","title":"東京市場は米株安と円相場をにらんだ神経質な展開","sum":"前日の欧米株安や為替の振れを受け、値がさ半導体株中心に売り買いが交錯する展開となりました。","url":"https://kabutan.jp/news/marketnews/"},{"src":"みんかぶ","title":"ドル円159円台の円安継続、輸出関連の採算改善期待が意識される","sum":"円安基調が続くなかで自動車・機械など輸出関連の業績上振れ期待が相場の下支え要因として意識されています。","url":"https://fx.minkabu.jp/news/376250"},{"src":"日本経済新聞","title":"ドル円相場は159円台で高止まり、介入警戒感が残る","sum":"日米金利差を背景とした円安基調が続き、当局のけん制発言に対する市場の反応は限定的です。","url":"https://www.nikkei.com/marketdata/quote/USDJPY/"},{"src":"株探","title":"日経レバレッジETF（1570）は指数の日々変動の2倍を目指し出来高上位に","sum":"短期資金の受け皿として売買代金が膨らみやすく、指数の振れが大きい局面では値動きも倍加しています。","url":"https://kabutan.jp/stock/chart?code=1570"},{"src":"日経会社情報DIGITAL","title":"NEXT FUNDS 日経平均レバレッジETF、指数の高値圏推移を映して高値水準","sum":"日経平均の上昇を反映し1570の基準価額・株価も高い水準で推移しています。","url":"https://www.nikkei.com/nkd/company/?scode=1570"},{"src":"会社四季報オンライン","title":"AI・半導体関連の設備投資テーマが引き続き物色の中心","sum":"生成AI需要の拡大を背景に、半導体製造装置や電子部品の業績上方修正期待が市場の関心を集めています。","url":"https://shikiho.toyokeizai.net/"},{"src":"SBI証券 マーケット情報","title":"国内市況：米金利動向と為替次第で日経平均の振れ幅拡大","sum":"米長期金利と円相場の変動が東京市場の需給に直結し、日中の値幅が広がりやすい地合いとの見方が示されています。","url":"https://site1.sbisec.co.jp/ETGate/"},{"src":"株式新聞","title":"内需ディフェンシブと輸出関連のセクターローテーションが継続","sum":"円安メリット銘柄と内需株の間で資金が行き来し、テーマの入れ替わりが速い相場が続いています。","url":"https://kabushiki.jp/"},{"src":"松井証券 マーケット情報","title":"日経平均は前営業日比プラス圏で終了、売買代金は高水準","sum":"直近の取引では日経平均が上昇して終え、指数連動ETFを含めて商いは活発でした。","url":"https://finance.matsui.co.jp/stock/.N225/daily-bar/index"}];
+const MARKET = {"nikkei225":"68,286.39円（直近の取得値。8月14日の確定終値は68,713.80円）","nikkei225Change":"-933.86 (-1.35%)（直近取得時点。8月14日終値は+405.21 / +0.59%）","nikkeiLeverage":"69,780円（取得できた直近の気配値。最新値は要確認）","nikkeiLeverageChange":"-300 (-0.43%)","usdJpy":"159.69円","usdJpyChange":"+0.22 (+0.14%)","asOf":"2026年8月18日〜19日未明（日本時間）に取得。日経平均・日経レバ（1570）はいずれもザラ場・前営業日ベースの取得値で、最新の確定終値とは異なる可能性があります。ドル円は2026年8月18日14時42分時点、米国市場は現地8月17日終値（ダウ53,459.78＝-272.63、S&P500 7,745.06＝-40.70、ナスダック26,644.91＝-84.25）を参照。"};
 
 let idx = 0, score = 0, answered = false;
+
+function renderMarketBar(){
+  const el = document.getElementById('marketBar');
+  if(!MARKET){ el.style.display = 'none'; return; }
+  const items = [
+    {label:'日経平均', value: MARKET.nikkei225, change: MARKET.nikkei225Change},
+    {label:'日経レバ(1570)', value: MARKET.nikkeiLeverage, change: MARKET.nikkeiLeverageChange},
+    {label:'ドル円', value: MARKET.usdJpy, change: MARKET.usdJpyChange},
+  ];
+  const row = items.map(it=>{
+    const c = (it.change || '').trim();
+    const color = (c.startsWith('+') || c.startsWith('▲')) ? 'var(--up)' : (c.startsWith('-') || c.startsWith('▼')) ? 'var(--down)' : '#8a8270';
+    return `<div class="market-item">
+      <div class="market-label">${it.label}</div>
+      <div class="market-value">${it.value}</div>
+      ${c ? `<div class="market-change" style="color:${color}">${c}</div>` : ''}
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="market-row">${row}</div><div class="market-asof">${MARKET.asOf}</div>`;
+}
 
 function renderProgress(){
   const row = document.getElementById('progressRow');
@@ -323,8 +395,13 @@ function selectAnswer(i){
   const item = QUESTIONS[idx];
   document.querySelectorAll('.opt').forEach((btn,bi)=>{
     btn.disabled = true;
-    if(bi === item.correct) btn.classList.add('correct');
-    else if(bi === i) btn.classList.add('wrong');
+    if(bi === item.correct){
+      btn.classList.add('correct');
+      btn.insertAdjacentHTML('beforeend', '<span class="mark mark-correct">○</span>');
+    } else if(bi === i){
+      btn.classList.add('wrong');
+      btn.insertAdjacentHTML('beforeend', '<span class="mark mark-wrong">✕</span>');
+    }
   });
   if(i === item.correct) score++;
   document.getElementById('explainText').textContent = item.explain;
@@ -348,7 +425,7 @@ function next(){
     else if(pct >= 0.7) comment = "良いペースです。間違えた問題は明日以降も形を変えて出題されます。";
     else comment = "基礎から少しずつ。焦らず毎日の積み重ねが効きます。";
     document.getElementById('scoreComment').textContent = comment;
-    if(NEWS.length > 0){
+    if(NEWS.length > 0 || NEWS_JP.length > 0){
       document.getElementById('newsBtn').classList.add('show');
       document.getElementById('newsBtn').addEventListener('click', showNews);
     }
@@ -357,10 +434,8 @@ function next(){
   renderQuestion();
 }
 
-function showNews(){
-  document.getElementById('result').classList.remove('show');
-  const list = document.getElementById('newsList');
-  list.innerHTML = NEWS.map(n => `
+function renderNewsItems(list){
+  return list.map(n => `
     <div class="news-item">
       <div class="news-src">${n.src}</div>
       <div class="news-title">${n.title}</div>
@@ -368,9 +443,22 @@ function showNews(){
       <a class="news-link" href="${n.url}" target="_blank" rel="noopener">記事を読む →</a>
     </div>
   `).join('');
+}
+
+function showNews(){
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('newsList').innerHTML = renderNewsItems(NEWS);
+  const jpSection = document.getElementById('newsJpSection');
+  if(NEWS_JP.length > 0){
+    document.getElementById('newsListJp').innerHTML = renderNewsItems(NEWS_JP);
+    jpSection.style.display = '';
+  } else {
+    jpSection.style.display = 'none';
+  }
   document.getElementById('newsArea').classList.add('show');
 }
 
+renderMarketBar();
 renderQuestion();
 </script>
 </body>
