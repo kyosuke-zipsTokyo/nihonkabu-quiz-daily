@@ -155,9 +155,9 @@ ${avoidBlock}
 
 続けて、Web検索を使って、日本時間の深夜（今日の未明）までに出た米国市場中心のトレード関連ニュースをBloomberg・Reuters等から${NEWS_COUNT}本集めてください。各ニュースはタイトル・一文要約（自分の言葉で書き、記事本文は転載しない）・元記事URLの形式でまとめてください。`;
 
-  const response = await client.messages.create({
+  const stream = client.messages.stream({
     model: MODEL,
-    max_tokens: 8000,
+    max_tokens: 16000,
     tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 8 }],
     output_config: {
       effort: EFFORT,
@@ -168,14 +168,30 @@ ${avoidBlock}
     messages: [{ role: "user", content: userPrompt }],
   });
 
+  const response = await stream.finalMessage();
+
   if (response.stop_reason === "refusal") {
     throw new Error("Claude declined to generate the quiz (stop_reason: refusal).");
+  }
+  if (response.stop_reason === "max_tokens") {
+    throw new Error(
+      "Response was cut off at the max_tokens limit before finishing. Increase max_tokens in generate-and-send.mjs."
+    );
   }
 
   const textBlock = [...response.content].reverse().find((block) => block.type === "text");
   if (!textBlock) throw new Error("No text content returned from Claude.");
 
-  const parsed = JSON.parse(textBlock.text);
+  let parsed;
+  try {
+    parsed = JSON.parse(textBlock.text);
+  } catch (err) {
+    const preview = textBlock.text.length > 400 ? textBlock.text.slice(0, 400) + "..." : textBlock.text;
+    throw new Error(
+      `Failed to parse Claude's JSON output (stop_reason: ${response.stop_reason}, length: ${textBlock.text.length}). ` +
+        `Preview: ${preview}\nOriginal error: ${err.message}`
+    );
+  }
   const questions = Array.isArray(parsed.questions) ? parsed.questions.slice(0, QUESTION_COUNT) : [];
   const news = Array.isArray(parsed.news) ? parsed.news.slice(0, NEWS_COUNT) : [];
   if (questions.length === 0) throw new Error("Claude returned no questions.");
