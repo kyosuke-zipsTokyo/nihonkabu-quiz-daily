@@ -210,6 +210,51 @@
     text-decoration:none;
     font-weight:700;
   }
+  .mark{
+    float:right;
+    font-size:17px;
+    font-weight:900;
+    line-height:1;
+  }
+  .mark-correct{color:var(--up);}
+  .mark-wrong{color:var(--down);}
+  .market-bar{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+  }
+  .market-row{
+    display:flex;
+    gap:8px;
+  }
+  .market-item{
+    flex:1;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:8px 10px;
+  }
+  .market-label{
+    font-size:10px;
+    color:#8a8270;
+    margin-bottom:3px;
+  }
+  .market-value{
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .market-change{
+    font-size:10.5px;
+    font-weight:700;
+    margin-top:2px;
+  }
+  .market-asof{
+    font-size:9.5px;
+    color:#9a927c;
+    margin-top:8px;
+    text-align:right;
+  }
   footer{
     padding:14px 24px 20px;
     font-size:11px;
@@ -225,6 +270,7 @@
     <div class="eyebrow">今日のトレードクイズ</div>
     <h1>__H1_DATE__</h1>
     <div class="progress-row" id="progressRow"></div>
+    <div class="market-bar" id="marketBar"></div>
   </header>
 
   <main>
@@ -238,6 +284,10 @@
     <div class="news" id="newsArea">
       <div class="eyebrow" style="margin-bottom:12px;">TODAY'S HEADLINES（米国市場中心・JST深夜まで）</div>
       <div id="newsList"></div>
+      <div id="newsJpSection">
+        <div class="eyebrow" style="margin:24px 0 12px;">国内マーケットニュース（日本株関連）</div>
+        <div id="newsListJp"></div>
+      </div>
     </div>
   </main>
 
@@ -248,8 +298,30 @@
 const QUESTIONS = __QUESTIONS_JSON__;
 
 const NEWS = __NEWS_JSON__;
+const NEWS_JP = __NEWS_JP_JSON__;
+const MARKET = __MARKET_JSON__;
 
 let idx = 0, score = 0, answered = false;
+
+function renderMarketBar(){
+  const el = document.getElementById('marketBar');
+  if(!MARKET){ el.style.display = 'none'; return; }
+  const items = [
+    {label:'日経平均', value: MARKET.nikkei225, change: MARKET.nikkei225Change},
+    {label:'日経レバ(1570)', value: MARKET.nikkeiLeverage, change: MARKET.nikkeiLeverageChange},
+    {label:'ドル円', value: MARKET.usdJpy, change: MARKET.usdJpyChange},
+  ];
+  const row = items.map(it=>{
+    const c = (it.change || '').trim();
+    const color = (c.startsWith('+') || c.startsWith('▲')) ? 'var(--up)' : (c.startsWith('-') || c.startsWith('▼')) ? 'var(--down)' : '#8a8270';
+    return `<div class="market-item">
+      <div class="market-label">${it.label}</div>
+      <div class="market-value">${it.value}</div>
+      ${c ? `<div class="market-change" style="color:${color}">${c}</div>` : ''}
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="market-row">${row}</div><div class="market-asof">${MARKET.asOf}</div>`;
+}
 
 function renderProgress(){
   const row = document.getElementById('progressRow');
@@ -323,8 +395,13 @@ function selectAnswer(i){
   const item = QUESTIONS[idx];
   document.querySelectorAll('.opt').forEach((btn,bi)=>{
     btn.disabled = true;
-    if(bi === item.correct) btn.classList.add('correct');
-    else if(bi === i) btn.classList.add('wrong');
+    if(bi === item.correct){
+      btn.classList.add('correct');
+      btn.insertAdjacentHTML('beforeend', '<span class="mark mark-correct">○</span>');
+    } else if(bi === i){
+      btn.classList.add('wrong');
+      btn.insertAdjacentHTML('beforeend', '<span class="mark mark-wrong">✕</span>');
+    }
   });
   if(i === item.correct) score++;
   document.getElementById('explainText').textContent = item.explain;
@@ -348,7 +425,7 @@ function next(){
     else if(pct >= 0.7) comment = "良いペースです。間違えた問題は明日以降も形を変えて出題されます。";
     else comment = "基礎から少しずつ。焦らず毎日の積み重ねが効きます。";
     document.getElementById('scoreComment').textContent = comment;
-    if(NEWS.length > 0){
+    if(NEWS.length > 0 || NEWS_JP.length > 0){
       document.getElementById('newsBtn').classList.add('show');
       document.getElementById('newsBtn').addEventListener('click', showNews);
     }
@@ -357,10 +434,8 @@ function next(){
   renderQuestion();
 }
 
-function showNews(){
-  document.getElementById('result').classList.remove('show');
-  const list = document.getElementById('newsList');
-  list.innerHTML = NEWS.map(n => `
+function renderNewsItems(list){
+  return list.map(n => `
     <div class="news-item">
       <div class="news-src">${n.src}</div>
       <div class="news-title">${n.title}</div>
@@ -368,9 +443,22 @@ function showNews(){
       <a class="news-link" href="${n.url}" target="_blank" rel="noopener">記事を読む →</a>
     </div>
   `).join('');
+}
+
+function showNews(){
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('newsList').innerHTML = renderNewsItems(NEWS);
+  const jpSection = document.getElementById('newsJpSection');
+  if(NEWS_JP.length > 0){
+    document.getElementById('newsListJp').innerHTML = renderNewsItems(NEWS_JP);
+    jpSection.style.display = '';
+  } else {
+    jpSection.style.display = 'none';
+  }
   document.getElementById('newsArea').classList.add('show');
 }
 
+renderMarketBar();
 renderQuestion();
 </script>
 </body>

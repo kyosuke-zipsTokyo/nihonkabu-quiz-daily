@@ -24,6 +24,15 @@ const TOPICS = [
   "伝説的トレーダー（リバモア、ソロス、ダリオ等）の相場観・手法",
 ];
 
+const JP_NEWS_SOURCES = [
+  "日本経済新聞",
+  "会社四季報オンライン (shikiho.toyokeizai.net)",
+  "株探 (kabutan.jp)",
+  "株式新聞 (kabushiki.jp)",
+  "みんかぶ (minkabu.jp)",
+  "SBI証券マーケット情報",
+];
+
 function requireEnv(name) {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
@@ -124,8 +133,63 @@ const quizSchema = {
         additionalProperties: false,
       },
     },
+    newsJp: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          src: {
+            type: "string",
+            description: "情報源名（例: 日本経済新聞, 株探, みんかぶ, 会社四季報オンライン, SBI証券）",
+          },
+          title: { type: "string", description: "ニュースの見出し（日本語）" },
+          sum: {
+            type: "string",
+            description: "一文の要約。記事本文の転載はせず、自分の言葉で書くこと",
+          },
+          url: { type: "string", description: "元記事のURL" },
+        },
+        required: ["src", "title", "sum", "url"],
+        additionalProperties: false,
+      },
+      description: "日本国内の株式・マーケット関連ニュース",
+    },
+    market: {
+      type: "object",
+      properties: {
+        nikkei225: { type: "string", description: "日経平均株価の値（例: '39,450.12円'）" },
+        nikkei225Change: {
+          type: "string",
+          description: "前日比（例: '+120.50 (+0.31%)'。不明な場合は空文字）",
+        },
+        nikkeiLeverage: {
+          type: "string",
+          description: "日経レバレッジ上場投信(1570)の株価（例: '18,320円'）",
+        },
+        nikkeiLeverageChange: {
+          type: "string",
+          description: "前日比（例: '-85 (-0.46%)'。不明な場合は空文字）",
+        },
+        usdJpy: { type: "string", description: "ドル円レート（例: '148.32円'）" },
+        usdJpyChange: {
+          type: "string",
+          description: "前日比・前営業日比など分かる範囲で（不明な場合は空文字）",
+        },
+        asOf: { type: "string", description: "取得時点の表記（例: '2026年8月18日 06:00時点（日経平均・日経レバは前営業日終値）'）" },
+      },
+      required: [
+        "nikkei225",
+        "nikkei225Change",
+        "nikkeiLeverage",
+        "nikkeiLeverageChange",
+        "usdJpy",
+        "usdJpyChange",
+        "asOf",
+      ],
+      additionalProperties: false,
+    },
   },
-  required: ["questions", "news"],
+  required: ["questions", "news", "newsJp", "market"],
   additionalProperties: false,
 };
 
@@ -153,7 +217,21 @@ ${avoidBlock}
 
 ---
 
-続けて、Web検索を使って、日本時間の深夜（今日の未明）までに出た米国市場中心のトレード関連ニュースをBloomberg・Reuters等から${NEWS_COUNT}本集めてください。各ニュースはタイトル・一文要約（自分の言葉で書き、記事本文は転載しない）・元記事URLの形式でまとめてください。`;
+続けて、Web検索を使って、日本時間の深夜（今日の未明）までに出た米国市場中心のトレード関連ニュースをBloomberg・Reuters等から${NEWS_COUNT}本集めてください（news）。各ニュースはタイトル・一文要約（自分の言葉で書き、記事本文は転載しない）・元記事URLの形式でまとめてください。
+
+---
+
+続けて、日本国内の株式・マーケット関連ニュースを${NEWS_COUNT}本集めてください（newsJp）。情報源は以下を中心にしてください:
+${JP_NEWS_SOURCES.map((s) => `- ${s}`).join("\n")}
+こちらもタイトル・一文要約（自分の言葉で書き、記事本文は転載しない）・元記事URLの形式でまとめてください。
+
+---
+
+最後に、以下のマーケット情報をWeb検索で調べて、market として報告してください:
+- 日経平均株価（直近の値と前日比）
+- 日経レバレッジ上場投信（証券コード1570）の株価（直近の値と前日比）
+- ドル円為替レート（直近の値、分かれば前日比）
+生成時刻は日本時間の早朝のため、日経平均・日経レバは前営業日終値になる可能性が高いです。asOfには取得時点と、前営業日終値である場合はその旨を明記してください。`;
 
   const stream = client.messages.stream({
     model: MODEL,
@@ -194,17 +272,21 @@ ${avoidBlock}
   }
   const questions = Array.isArray(parsed.questions) ? parsed.questions.slice(0, QUESTION_COUNT) : [];
   const news = Array.isArray(parsed.news) ? parsed.news.slice(0, NEWS_COUNT) : [];
+  const newsJp = Array.isArray(parsed.newsJp) ? parsed.newsJp.slice(0, NEWS_COUNT) : [];
+  const market = parsed.market && typeof parsed.market === "object" ? parsed.market : null;
   if (questions.length === 0) throw new Error("Claude returned no questions.");
-  return { questions, news };
+  return { questions, news, newsJp, market };
 }
 
-function buildPageHtml({ questions, news, titleDate, h1Date }) {
+function buildPageHtml({ questions, news, newsJp, market, titleDate, h1Date }) {
   const template = readFileSync(TEMPLATE_PATH, "utf-8");
   return template
     .replace("__TITLE_DATE__", titleDate)
     .replace("__H1_DATE__", h1Date)
     .replace("__QUESTIONS_JSON__", JSON.stringify(questions))
-    .replace("__NEWS_JSON__", JSON.stringify(news));
+    .replace("__NEWS_JSON__", JSON.stringify(news))
+    .replace("__NEWS_JP_JSON__", JSON.stringify(newsJp))
+    .replace("__MARKET_JSON__", JSON.stringify(market));
 }
 
 function getPageUrl() {
@@ -219,7 +301,7 @@ function getPageUrl() {
   return `https://${owner.toLowerCase()}.github.io/${repo}/`;
 }
 
-async function sendEmail({ pageUrl, titleDate, questions, news }) {
+async function sendEmail({ pageUrl, titleDate, questions, news, newsJp }) {
   const gmailUser = requireEnv("GMAIL_USER");
   const gmailAppPassword = requireEnv("GMAIL_APP_PASSWORD");
   const recipient = process.env.RECIPIENT_EMAIL || gmailUser;
@@ -238,7 +320,7 @@ async function sendEmail({ pageUrl, titleDate, questions, news }) {
       <h2 style="margin-bottom:4px;">📈 今日のトレードクイズ</h2>
       <div style="color:#666;font-size:13px;margin-bottom:20px;">${titleDate}</div>
       <p style="font-size:14px;line-height:1.7;">出題範囲: ${escapeHtml(categories)}<br>
-      クイズ${questions.length}問 ＋ 本日のマーケットニュース${news.length}本</p>
+      クイズ${questions.length}問 ＋ 米国マーケットニュース${news.length}本 ＋ 国内マーケットニュース${newsJp.length}本 ＋ 日経平均・日経レバ・為替の最新値</p>
       <a href="${pageUrl}" style="display:inline-block;margin-top:12px;padding:14px 22px;background:#12213a;color:#f7f3ea;text-decoration:none;border-radius:6px;font-weight:bold;">クイズを始める →</a>
       <div style="font-size:12px;color:#999;margin-top:24px;">このメールはClaudeが自動生成した学習用コンテンツです。投資助言ではありません。</div>
     </div>`;
@@ -269,16 +351,16 @@ async function main() {
   const h1Date = `${y}年${m}月${d}日（${weekdays[dow]}）`;
 
   const history = loadHistory();
-  const { questions, news } = await generateQuizAndNews(history, fileDateStr);
+  const { questions, news, newsJp, market } = await generateQuizAndNews(history, fileDateStr);
 
-  const html = buildPageHtml({ questions, news, titleDate, h1Date });
+  const html = buildPageHtml({ questions, news, newsJp, market, titleDate, h1Date });
 
   mkdirSync(ARCHIVE_DIR, { recursive: true });
   writeFileSync(path.join(DOCS_DIR, "index.html"), html);
   writeFileSync(path.join(ARCHIVE_DIR, `${fileDateStr}.html`), html);
 
   const pageUrl = getPageUrl();
-  await sendEmail({ pageUrl, titleDate, questions, news });
+  await sendEmail({ pageUrl, titleDate, questions, news, newsJp });
 
   const updatedHistory = [
     ...history,
@@ -286,7 +368,9 @@ async function main() {
   ];
   saveHistory(updatedHistory, fileDateStr);
 
-  console.log(`Published ${questions.length} questions + ${news.length} news items to ${pageUrl}`);
+  console.log(
+    `Published ${questions.length} questions + ${news.length} US news + ${newsJp.length} JP news to ${pageUrl}`
+  );
 }
 
 main().catch((err) => {
