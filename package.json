@@ -1,0 +1,14 @@
+{
+  "name": "nihonkabu-quiz-daily",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Generates a daily short/mid-term Japan-stock trading quiz + US market news digest with Claude, publishes it as an interactive page on GitHub Pages, and emails the link via Gmail SMTP.",
+  "scripts": {
+    "build": "node generate-and-send.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.117.1",
+    "nodemailer": "^9.0.5"
+  }
+}
